@@ -1,0 +1,1 @@
+cmd /k "activate YOUR_PYTON_ENV && python YOUR_PATH_TO_bybit_cli.py"
