@@ -36,7 +36,7 @@ def get_usdt_balance(client):
     for balance in balances:
         if balance["coin"] == "USDT":
             usdt_balance = round(float(balance["equity"]))
-            print(f"total usdt balance: {usdt_balance} USDT")
+            # print(f"total usdt balance: {usdt_balance} USDT")
 
     if usdt_balance is not None:
         return usdt_balance
@@ -121,10 +121,12 @@ def get_all_spot_positions(client):
         print("\n")
         print("Current spot positions")
         positions_df = pd.DataFrame(spot_positions, columns=["coin", "usdValue", "coinAmount"])
-        print(positions_df.to_markdown())
+        positions_df["coinAmount"] = positions_df["coinAmount"].astype(str)
+        print(positions_df.to_markdown(floatfmt=''))
         print("\n")
     else:
         print("No spot positions")
+
 
 
 # order functions
@@ -204,135 +206,6 @@ def limit_tranche(client, usd_size, ticker, side, upper_price, lower_price, orde
 
         print("orders created")
 
-def limit_tranche_avg_price(client, usd_size, ticker, side, upper_price, lower_price, avg_price ,order_amount):
-    """
-
-    :param client: bybit client
-    :param usd_size: total size in usd
-    :param ticker: ticker
-    :param side: b > buy, s > sell
-    :param upper_price: upper price limit
-    :param lower_price: lower price limit
-    :param avg_price: avg price if all orders filled
-    :param order_amount: number of orders
-    :return:
-    """
-    if order_amount == "default":
-        order_amount = 15
-
-    max_order_size_coin, min_order_size_coin, min_order_size_usd, max_order_size_usd, decimals, tick_size = get_instrument_info(client, ticker)
-    tick_decimals = str(tick_size)[::-1].find('.')
-    orders = []
-
-    last_price = get_last_price(client, ticker)
-    error = True
-    if upper_price > lower_price:
-        if side == "b":
-            if last_price > upper_price:
-                if lower_price < avg_price < upper_price:
-                    error = False
-                else:
-                    print("avg price must be between lower and upper limit price")
-            else:
-                print("on buy side last price should be higher than upper price limit")
-        elif side == "s":
-            if last_price < lower_price:
-                if lower_price < avg_price < upper_price:
-                    error = False
-                else:
-                    print("avg price must be between lower and upper limit price")
-            else:
-                print("on sell side last price should be lower than lower price limit")
-        else:
-            print(f"Error with side input || input: {side} || should be: b/s")
-    else:
-        print("upper price limit should be higher than lower price limit")
-
-    if not error:
-        if side == "b":
-            side = "Buy"
-            usdt_balance = get_usdt_balance(client)
-            if usd_size < usdt_balance:
-                # Calculate the spacing between prices using the cubic formula
-                a = 4 * (avg_price - lower_price) / ((order_amount - 1) ** 3)
-                b = -6 * (avg_price - lower_price) / ((order_amount - 1) ** 2)
-                c = 4 * (avg_price - lower_price) / (order_amount - 1)
-
-                price_spacing = lambda i: a * (i ** 3) + b * (i ** 2) + c * i + lower_price
-
-                # Generate limit orders
-                usd_size_left = usd_size
-                current_avg_price = 0.0
-
-                for i in range(order_amount):
-                    price = price_spacing(i)
-                    amount = usd_size / order_amount
-
-                    if price > upper_price:
-                        price = upper_price
-
-                    order = (round(amount / price,decimals), round(price, tick_decimals))
-                    orders.append(order)
-
-                    current_avg_price = ((avg_price * (usd_size - amount)) + (price * amount)) / usd_size
-                    usd_size_left -= amount
-
-                # Adjust the last order to reach the desired average price
-                last_order = orders[-1]
-                last_amount, last_price = last_order
-                price_diff = avg_price - current_avg_price
-                last_order = (round(last_amount, decimals), round(last_price + price_diff, tick_decimals))
-                orders[-1] = last_order
-
-            else:
-                print(f"Not enought usdt to execute the limit tranche order || usdt available: {usdt_balance} $")
-
-        elif side == "s":
-            side = "Sell"
-            coin_balance, usd_value = get_coin_balance(client, ticker)
-
-            coins_to_sell = round(usd_size / ((upper_price + lower_price) / 2), decimals)
-
-            if coins_to_sell < coin_balance:
-                # Calculate the spacing between prices using the cubic formula
-                a = 4 * (avg_price - lower_price) / ((order_amount - 1) ** 3)
-                b = -6 * (avg_price - lower_price) / ((order_amount - 1) ** 2)
-                c = 4 * (avg_price - lower_price) / (order_amount - 1)
-
-                price_spacing = lambda i: a * (i ** 3) + b * (i ** 2) + c * i + lower_price
-
-                # Generate limit orders
-                coin_size_left = coins_to_sell
-                current_avg_price = 0.0
-
-                for i in range(order_amount):
-                    price = price_spacing(i)
-                    amount = round(coins_to_sell / order_amount, decimals)
-
-                    if price > upper_price:
-                        price = upper_price
-
-                    order = (round(amount, decimals), round(price, tick_decimals))
-                    orders.append(order)
-
-                    current_avg_price = ((avg_price * (coins_to_sell - amount)) + (price * amount)) / coins_to_sell
-                    coin_size_left -= amount
-
-                # Adjust the last order to reach the desired average price
-                last_order = orders[-1]
-                last_amount, last_price = last_order
-                price_diff = avg_price - current_avg_price
-                last_order = (round(last_amount, decimals), round(last_price + price_diff, tick_decimals))
-                orders[-1] = last_order
-            else:
-                print(f"not enough coins available to create limit tranche order || coin balance: {coin_balance}")
-
-        for order in orders:
-            # print(order)
-            client.place_order(category="spot", symbol=ticker, side=side, orderType="Limit", qty=order[0], price=order[1], timeInForce="GTC")
-            time.sleep(0.01)
-
-        print("orders created")
 
 # market orders
 def market_order(client, usd_size, ticker, side):
@@ -509,68 +382,21 @@ def set_limit_orders_pct(client):
     tickers = get_spot_usdt_tickers(client=client)
     ticker = cli_inputs.select_ticker(tickers=tickers)
     side = cli_inputs.select_side()
-
+    upper_price = cli_inputs.select_upper_limit_price()
+    lower_price = cli_inputs.select_lower_limit_price()
+    avg_prc = (upper_price + lower_price) / 2
     if side == "s":
         coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
         acc_pct = cli_inputs.select_pct()
-        usd_size = round(usd_value * acc_pct)
+        usd_size = round((coin_balance * avg_prc * 0.999) * acc_pct)
     else:
         usdt_balance = get_usdt_balance(client=client)
         acc_pct = cli_inputs.select_pct()
         usd_size = round(usdt_balance * acc_pct)
 
-    upper_price = cli_inputs.select_upper_limit_price()
-    lower_price = cli_inputs.select_lower_limit_price()
     order_amount = cli_inputs.select_order_amount()
 
-    limit_tranche(client=client, usd_size=usd_size, ticker=ticker, side=side, upper_price=upper_price, lower_price=lower_price, order_amount=order_amount)
-
-
-def set_limit_orders_atAvgPrc_usd(client):
-    """
-    Functions that sets basic limit orders
-
-    :return:
-    """
-    tickers = get_spot_usdt_tickers(client=client)
-    usd_size = cli_inputs.select_usdt_size()
-    side = cli_inputs.select_side()
-    ticker = cli_inputs.select_ticker(tickers=tickers)
-    upper_price = cli_inputs.select_upper_limit_price()
-    lower_price = cli_inputs.select_lower_limit_price()
-    avg_price = cli_inputs.select_avg_limit_price()
-    order_amount = cli_inputs.select_order_amount()
-
-    limit_tranche_avg_price(client=client, usd_size=usd_size, ticker=ticker, side=side, upper_price=upper_price, lower_price=lower_price, avg_price=avg_price ,order_amount=order_amount)
-
-
-def set_limit_orders_atAvgPrc_pct(client):
-    """
-    Functions that sets basic limit orders
-
-    :return:
-    """
-
-    tickers = get_spot_usdt_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
-    side = cli_inputs.select_side()
-
-    if side == "s":
-        coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
-        acc_pct = cli_inputs.select_pct()
-        usd_size = round(usd_value * acc_pct)
-    else:
-        usdt_balance = get_usdt_balance(client=client)
-        acc_pct = cli_inputs.select_pct()
-        usd_size = round(usdt_balance * acc_pct)
-
-
-    upper_price = cli_inputs.select_upper_limit_price()
-    lower_price = cli_inputs.select_lower_limit_price()
-    avg_price = cli_inputs.select_avg_limit_price()
-    order_amount = cli_inputs.select_order_amount()
-
-    limit_tranche_avg_price(client=client, usd_size=usd_size, ticker=ticker, side=side, upper_price=upper_price, lower_price=lower_price, avg_price=avg_price ,order_amount=order_amount)
+    limit_tranche(client=client, usd_size=usd_size ,ticker=ticker, side=side, upper_price=upper_price, lower_price=lower_price, order_amount=order_amount)
 
 
 def set_linear_twap_usd(client):
@@ -656,3 +482,35 @@ def set_market_order_pct(client):
 
     market_order_thread = Thread(target=market_order, args=(client, usd_size, ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
 
+# todo: TESTING
+# api_key, api_secret = get_credentials(account="personal")
+# client = auth(api_key, api_secret)
+#
+# get_all_spot_positions(client)
+
+# set_limit_orders_usd(client)
+# set_limit_orders_pct(client)
+
+# set_limit_orders_atAvgPrc_usd(client)
+# set_limit_orders_atAvgPrc_pct(client)
+
+# set_linear_twap_usd(client)
+# set_market_order_usd(client)
+
+# set_linear_twap_pct(client)
+# set_market_order_pct(client)
+
+# todo: dodat price checke da štima glede uper limit itd da so zadeve logične uglavnem pa da nemorš ful velke cifre dat
+
+# limit_tranche(client, 500, "ETHUSDT", "s", 1850, 1810, 10)
+
+# limit_tranche_avg_price(client, 1000, "ETHUSDT", "s",1850, 1810, 1833 ,10)
+
+
+# linear_twap(client, 1965, "ETHUSDT", "s", 30, 10)
+# market_order(client, 1000, "ETHUSDT", "s")
+
+
+# tickers = get_spot_usdt_tickers(client)
+# max_order_size_coin, min_order_size_coin, min_order_amount, max_order_amount, decimals = get_instrument_info(client, "BTCUSDT")
+# balance = get_usdt_balance(client)

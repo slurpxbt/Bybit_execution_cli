@@ -113,16 +113,20 @@ def get_open_positions(client, display:bool):
 
     if open_positions:
         if display:
+            print("\n")
             print("Current positions:")
             positions_df = pd.DataFrame.from_dict(open_positions, orient="index")
             positions_df = positions_df[["symbol", "side", "size", "positionValue", "avgPrice", "unrealisedPnl", "takeProfit", "stopLoss"]]
             print(positions_df.to_markdown())
+            print("\n")
 
         return open_positions
 
     else:
         if display:
+            print("\n")
             print("No open positions")
+            print("\n")
         return open_positions
 
 
@@ -636,173 +640,6 @@ def limit_tranche_close(client, coin_size, ticker, side, upper_price, lower_pric
             time.sleep(0.01)
 
 
-def limit_tranche_avg_price_open(client, usd_size, ticker, side, upper_price, lower_price, avg_price, order_amount):
-    """
-
-    :param client: bybit client
-    :param usd_size: total size in usd
-    :param ticker: ticker
-    :param side: b > buy, s > sell
-    :param upper_price: upper price limit
-    :param lower_price: lower price limit
-    :param avg_price: avg price if all orders filled
-    :param order_amount: number of orders
-    :return:
-    """
-
-    max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
-    tick_decimals = str(tick_size)[::-1].find('.')
-    orders = []
-
-    last_price = get_last_price(client, ticker)
-    if side == "b":
-        side = "Buy"
-    elif side == "s":
-        side = "Sell"
-
-    error = True
-    if upper_price > lower_price:
-        if side == "Buy":
-            if last_price > upper_price:
-                if lower_price < avg_price < upper_price:
-                    error = False
-                else:
-                    print("avg price must be between lower and upper limit price")
-            else:
-                print("on buy side last price should be higher than upper price limit")
-        elif side == "Sell":
-            if last_price < lower_price:
-                if lower_price < avg_price < upper_price:
-                    error = False
-                else:
-                    print("avg price must be between lower and upper limit price")
-            else:
-                print("on sell side last price should be lower than lower price limit")
-        else:
-            print(f"Error with side input || input: {side} || should be: b/s")
-
-    else:
-        print("upper price limit should be higher than lower price limit")
-
-    if not error:
-        # Calculate the spacing between prices using the cubic formula
-        a = 4 * (avg_price - lower_price) / ((order_amount - 1) ** 3)
-        b = -6 * (avg_price - lower_price) / ((order_amount - 1) ** 2)
-        c = 4 * (avg_price - lower_price) / (order_amount - 1)
-
-        price_spacing = lambda i: a * (i ** 3) + b * (i ** 2) + c * i + lower_price
-
-        # Generate limit orders
-        usd_size_left = usd_size
-        current_avg_price = 0.0
-
-        for i in range(order_amount):
-            price = price_spacing(i)
-            amount = usd_size / order_amount
-
-            if price > upper_price:
-                price = upper_price
-
-            order = (round(amount / price, decimals), round(price, tick_decimals))
-            orders.append(order)
-
-            current_avg_price = ((avg_price * (usd_size - amount)) + (price * amount)) / usd_size
-            usd_size_left -= amount
-
-        # Adjust the last order to reach the desired average price
-        last_order = orders[-1]
-        last_amount, last_price = last_order
-        price_diff = avg_price - current_avg_price
-        last_order = (round(last_amount, decimals), round(last_price + price_diff, tick_decimals))
-        orders[-1] = last_order
-
-        for order in orders:
-            client.place_order(category="linear", symbol=ticker, side=side, orderType="Limit", qty=order[0], price=order[1], timeInForce="GTC", reduceOnly=False)
-            time.sleep(0.01)
-
-
-def limit_tranche_avg_price_close(client, coin_size, ticker, side, upper_price, lower_price, avg_price, order_amount):
-    """
-
-    :param client: bybit client
-    :param coin_size: total size in coins
-    :param ticker: ticker
-    :param side: b > buy, s > sell
-    :param upper_price: upper price limit
-    :param lower_price: lower price limit
-    :param avg_price: avg price if all orders filled
-    :param order_amount: number of orders
-    :return:
-    """
-
-    max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
-    tick_decimals = str(tick_size)[::-1].find('.')
-    orders = []
-
-    last_price = get_last_price(client, ticker)
-    if side == "b":
-        side = "Buy"
-    elif side == "s":
-        side = "Sell"
-
-    error = True
-    if upper_price > lower_price:
-        if side == "Buy":
-            if last_price > upper_price:
-                if lower_price < avg_price < upper_price:
-                    error = False
-                else:
-                    print("avg price must be between lower and upper limit price")
-            else:
-                print("on buy side last price should be higher than upper price limit")
-        elif side == "Sell":
-            if last_price < lower_price:
-                if lower_price < avg_price < upper_price:
-                    error = False
-                else:
-                    print("avg price must be between lower and upper limit price")
-            else:
-                print("on sell side last price should be lower than lower price limit")
-        else:
-            print(f"Error with side input || input: {side} || should be: b/s")
-    else:
-        print("upper price limit should be higher than lower price limit")
-
-    if not error:
-        # Calculate the spacing between prices using the cubic formula
-        a = 4 * (avg_price - lower_price) / ((order_amount - 1) ** 3)
-        b = -6 * (avg_price - lower_price) / ((order_amount - 1) ** 2)
-        c = 4 * (avg_price - lower_price) / (order_amount - 1)
-
-        price_spacing = lambda i: a * (i ** 3) + b * (i ** 2) + c * i + lower_price
-
-        # Generate limit orders
-        coin_size_left = coin_size
-        current_avg_price = 0.0
-
-        for i in range(order_amount):
-            price = price_spacing(i)
-            amount = coin_size / order_amount
-
-            if price > upper_price:
-                price = upper_price
-
-            order = (round(amount, decimals), round(price, tick_decimals))
-            orders.append(order)
-
-            current_avg_price = ((avg_price * (coin_size - amount)) + (price * amount)) / coin_size
-            coin_size_left -= amount
-
-        # Adjust the last order to reach the desired average price
-        last_order = orders[-1]
-        last_amount, last_price = last_order
-        price_diff = avg_price - current_avg_price
-        last_order = (round(last_amount, decimals), round(last_price + price_diff, tick_decimals))
-        orders[-1] = last_order
-
-        for order in orders:
-            client.place_order(category="linear", symbol=ticker, side=side, orderType="Limit", qty=order[0], price=order[1], timeInForce="GTC", reduceOnly=True)
-            time.sleep(0.01)
 
 
 # risk limit check
@@ -819,7 +656,9 @@ def check_risk_limit(client, ticker, usd_size, side):
             if new_total_size < position_size_limit:
                 risk_ok = True
             else:
+                print("\n")
                 print(f"risk limit would be exceded adjust risk limits or choose lower pos size || risk limit: {position_size_limit}")
+                print("\n")
         elif position["side"] == "Sell" and side == "s":
             new_total_size = float(position["positionValue"]) + usd_size
             if new_total_size < position_size_limit:
@@ -830,6 +669,10 @@ def check_risk_limit(client, ticker, usd_size, side):
     else:
         if usd_size < position_size_limit:
             risk_ok = True
+        else:
+            print("\n")
+            print(f"risk limit would be exceded adjust risk limits or choose lower pos size || risk limit: {position_size_limit}")
+            print("\n")
 
     return risk_ok
 
@@ -920,7 +763,7 @@ def set_linear_twap_open(client):
     risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
 
     if risk_ok:
-        linear_twap_thread = Thread(target=linear_twap_open, args=(client, ticker, side, usd_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{usd_size}_twap{round(duration / 60, 1)}min").start()
+        linear_twap_thread = Thread(target=linear_twap_open, args=(client, ticker, side, usd_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{usd_size}_twap{round(duration / 60)}min").start()
 
 
 def set_linear_twap_close(client):
@@ -951,7 +794,7 @@ def set_linear_twap_close(client):
     order_amount = cli_inputs.select_order_amount()
 
     if close:
-        linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60, 1)}min").start()
+        linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60)}min").start()
 
 
 def set_limits_open(client):
@@ -966,7 +809,7 @@ def set_limits_open(client):
     risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
 
     if risk_ok:
-        limit_open_thread = Thread(target=limit_tranche_avg_price_open, args=(client, usd_size, ticker, side, upper_price, lower_price ,order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
+        limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
 
 
 def set_limits_close(client):
@@ -996,46 +839,40 @@ def set_limits_close(client):
         limit_close_thread = Thread(target=limit_tranche_close, args=(client, coin_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{coin_size}").start()
 
 
-def set_limits_at_avgPrc_open(client):
-    tickers = get_usdt_futures_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
-    side = cli_inputs.select_side()
-    usd_size = cli_inputs.select_usdt_size()
-    upper_price = cli_inputs.select_upper_limit_price()
-    lower_price = cli_inputs.select_lower_limit_price()
-    avg_price = cli_inputs.select_avg_limit_price()
-    order_amount = cli_inputs.select_order_amount()
-
-    risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
-
-    if risk_ok:
-        limit_open_thread = Thread(target=limit_tranche_avg_price_open, args=(client, usd_size, ticker, side, upper_price, lower_price,avg_price ,order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
 
 
-def set_limits_at_avgPrc_close(client):
-    close_id, ticker, side, size, usd_value = select_close_id_futures(client)
-    max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
 
-    close = False
-    while not close:
-        close_by = input("close by: usd size or % [1-usd, 2-%] >>> ")
-        if int(close_by) == 1:
-            usd_size = cli_inputs.select_usdt_size()
-            last_price = get_last_price(client, ticker)
-            coin_size = round(usd_size / last_price, decimals)
-            close = True
-        elif int(close_by) == 2:
-            pct = cli_inputs.select_pct()
-            coin_size = round(size * pct, decimals)
-            close = True
-        else:
-            print("Wrong input should be 1 or 2")
+# todo: TESTING
+# api_key, api_secret = get_credentials("bybit_api_key", "bybit_secret_key")
+# client = auth(api_key, api_secret)
+#
+# usdt = get_usdt_balance(client)
+# tickers = get_usdt_futures_tickers(client)
 
-    upper_price = cli_inputs.select_upper_limit_price()
-    lower_price = cli_inputs.select_lower_limit_price()
-    avg_price = cli_inputs.select_avg_limit_price()
-    order_amount = cli_inputs.select_order_amount()
+# set_limits_close(client)
+# set_limits_at_avgPrc_close(client)
 
-    if close:
-        limit_close_thread = Thread(target=limit_tranche_avg_price_close, args=(client, coin_size, ticker, side, upper_price, lower_price, avg_price ,order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{coin_size}").start()
+# set_limits_open(client)
+# set_limits_at_avgPrc_open(client)
 
+# set_linear_twap_open(client)
+# set_linear_twap_close(client)
+
+# set_market_order_open(client)
+# set_market_order_close(client)
+
+
+# get_instrument_info(client, "BTCUSDT")
+# positions = get_open_positions(client, display=True)
+
+# market_order(client, "ETHUSDT", "s", 1000)
+# market_close(client, "ETHUSDT", "b", 0.6)
+
+# linear_twap_open(client, "ETHUSDT", "s", 1000, 30, 5)
+# linear_twap_close(client, "ETHUSDT", "b", 1000, 30, 5)
+
+# limit_tranche_open(client, 1000, "ETHUSDT", "b", 1770, 1740, 5)
+# limit_tranche_close(client, 0.55, "ETHUSDT", "b", 1780, 1740, 5)
+
+
+# limit_tranche_avg_price_reduce(client, 0.028, "BTCUSDT", "s", 35800, 35500, 35600, 5)
