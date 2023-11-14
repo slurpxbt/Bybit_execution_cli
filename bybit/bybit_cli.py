@@ -53,18 +53,12 @@ def bybit_spot_cli(account):
             print("Limit order mode selected >> options:"
                   "\n 1 >> limit orders between 2 prices by $ amount"
                   "\n 2 >> limit orders between 2 prices by account %"
-                  "\n 3 >> limit orders between 2 prices by $ amount at specific avg. price"
-                  "\n 4 >> limit orders between 2 prices by account % at specific avg. price"
                   )
             order_mode = int(input("input number >>> "))
             if order_mode == 1:
                 bybit_spot.set_limit_orders_usd(client)
             elif order_mode == 2:
                 bybit_spot.set_limit_orders_pct(client)
-            elif order_mode == 3:
-                bybit_spot.set_limit_orders_atAvgPrc_usd(client)
-            elif order_mode == 4:
-                bybit_spot.set_limit_orders_atAvgPrc_pct(client)
 
             print("\n")
         elif mode == 4:
@@ -123,13 +117,10 @@ def bybit_futures_cli(account):
                 print("\n")
                 print("Limit order mode seleceted >> options:"
                       "\n 1 >> limit orders between 2 prices by $ amount"
-                      "\n 2 >> limit orders between 2 prices by $ amount at specific avg. price"
                       )
                 limit_order_mode = int(input("input number >>> "))
                 if limit_order_mode == 1:
                     bybit_usdt_futures.set_limits_open(client)
-                elif limit_order_mode == 2:
-                    bybit_usdt_futures.set_limits_at_avgPrc_open(client)
             elif order_mode == 3:
                 bybit_usdt_futures.set_linear_twap_open(client)
         elif mode == 3:
@@ -144,13 +135,10 @@ def bybit_futures_cli(account):
                 print("\n")
                 print("Limit order mode seleceted >> options:"
                       "\n 1 >> limit orders between 2 prices by $ amount"
-                      "\n 2 >> limit orders between 2 prices by $ amount at specific avg. price"
                       )
                 limit_order_mode = int(input("input number >>> "))
                 if limit_order_mode == 1:
                     bybit_usdt_futures.set_limits_close(client)
-                elif limit_order_mode == 2:
-                    bybit_usdt_futures.set_limits_at_avgPrc_close(client)
             elif order_mode == 3:
                 bybit_usdt_futures.set_linear_twap_close(client)
         elif mode == 4:
