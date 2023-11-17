@@ -733,22 +733,10 @@ def set_market_order_close(client):
     close_id, ticker, side, size, usd_value = select_close_id_futures(client)
     max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
 
-    close = False
-    close_by = input("close by: usd size or % [1-usd, 2-%] >>> ")
-    if int(close_by) == 1:
-        usd_size = cli_inputs.select_usdt_size()
-        last_price = get_last_price(client, ticker)
-        coin_size = round(usd_size / last_price, decimals)
-        close = True
-    elif int(close_by) == 2:
-        pct = cli_inputs.select_pct()
-        coin_size = round(size * pct, decimals)
-        close = True
-    else:
-        print("Wrong input should be 1 or 2")
+    pct = cli_inputs.select_pct()
+    coin_size = round(size * pct, decimals)
 
-    if close:
-        market_order_thread = Thread(target=market_order_close, args=(client, ticker, side, coin_size), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins").start()
+    market_order_thread = Thread(target=market_order_close, args=(client, ticker, side, coin_size), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins").start()
 
 
 def set_linear_twap_open(client):
@@ -776,25 +764,12 @@ def set_linear_twap_close(client):
     close_id, ticker, side, size, usd_value = select_close_id_futures(client)
     max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
 
-    close = False
-    close_by = input("close by: usd size or % [1-usd, 2-%] >>> ")
-    if int(close_by) == 1:
-        usd_size = cli_inputs.select_usdt_size()
-        last_price = get_last_price(client, ticker)
-        coin_size = round(usd_size / last_price, decimals)
-        close = True
-    elif int(close_by) == 2:
-        pct = cli_inputs.select_pct()
-        coin_size = round(size * pct, decimals)
-        close = True
-    else:
-        print("Wrong input should be 1 or 2")
-
+    pct = cli_inputs.select_pct()
+    coin_size = round(size * pct, decimals)
     duration = cli_inputs.select_duration()
     order_amount = cli_inputs.select_order_amount()
 
-    if close:
-        linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60)}min").start()
+    linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60)}min").start()
 
 
 def set_limits_open(client):
@@ -839,13 +814,65 @@ def set_limits_close(client):
         limit_close_thread = Thread(target=limit_tranche_close, args=(client, coin_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{coin_size}").start()
 
 
+def set_multiple_twaps_open(client):
 
+    exit_ = False
+
+    tickers = get_usdt_futures_tickers(client=client)
+    twaps = []
+    mode = 0
+    while not exit_:
+        ticker = cli_inputs.select_ticker(tickers=tickers)
+        side = cli_inputs.select_side()
+        usd_size = cli_inputs.select_usdt_size()
+        order_amount = cli_inputs.select_order_amount()
+        duration = cli_inputs.select_duration()
+        print("\n")
+
+        risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
+        if risk_ok:
+            twaps.append([ticker,side, usd_size, duration, order_amount])
+            mode = 0
+
+        while mode not in [1,2]:
+            mode = int(input("add another twap/exit [1- another twap, 2-exit] >>> "))
+            if mode == 2:
+                exit_ = True
+            elif mode not in [1,2]:
+                print("Wrong input, input must be 1 or 2")
+
+    if twaps:
+        print("Executing following twaps:")
+        for i in twaps:
+            print(f"{i[0]} - {i[1]} - {i[2]} usd - {i[3] / 60}min")
+
+            linear_twap_thread = Thread(target=linear_twap_open, args=(client, i[0], i[1], i[2], i[3], i[4]), name=f"FUTURES_{i[0]}_{i[1]}_{i[2]}_twap{round(i[3] / 60)}min").start()
+
+
+def set_multiple_twaps_close(client):
+
+    exit_ = False
+    mode = 0
+    while not exit_:
+
+        set_linear_twap_close(client)
+        mode = 0
+
+        while mode not in [1, 2]:
+            mode = int(input("add another twap_close/exit [1- another twap, 2-exit] >>> "))
+            if mode == 2:
+                exit_ = True
+            elif mode not in [1, 2]:
+                print("Wrong input, input must be 1 or 2")
 
 
 # todo: TESTING
-# api_key, api_secret = get_credentials("bybit_api_key", "bybit_secret_key")
+# api_key, api_secret = get_credentials(account="personal")
 # client = auth(api_key, api_secret)
-#
+
+# set_multiple_twaps_open(client)
+# set_multiple_twaps_close(client)
+
 # usdt = get_usdt_balance(client)
 # tickers = get_usdt_futures_tickers(client)
 
