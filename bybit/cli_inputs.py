@@ -134,3 +134,14 @@ def select_avg_limit_price():
         return None
 
 
+def select_lookback_window():
+    """
+    :return: lookcback window[hours]
+    """
+    input_price = input("select lookback window[hours] >>> ")
+    try:
+        input_price = int(input_price)
+        return input_price
+    except:
+        print("Error selecting lookback window")
+        return None

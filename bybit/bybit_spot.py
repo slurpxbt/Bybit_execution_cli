@@ -263,7 +263,7 @@ def market_order(client, usd_size, ticker, side):
             time.sleep(time_delay)
 
 
-def linear_twap(client, usd_size, ticker, side, duration, order_amount):
+def linear_twap(client, usd_size, coin_sell_amount ,ticker, side, duration, order_amount):
     """
     fuction that split order into equal sized orders and executes them over specified duration with equal time delays
     :param client: bybit client
@@ -315,9 +315,9 @@ def linear_twap(client, usd_size, ticker, side, duration, order_amount):
         coin_balance, usd_value = get_coin_balance(client, ticker)
         last_price = get_last_price(client, ticker)
 
-        coins_to_sell = round(usd_size / last_price, decimals)
+        coins_to_sell = coin_sell_amount
         side = "Sell"
-        if usd_value > usd_size:
+        if coin_balance >= coin_sell_amount:
             if order_amount == "auto":
                 single_order = round(coins_to_sell / 100, decimals)
                 if single_order > min_order_size_coin:
@@ -341,7 +341,7 @@ def linear_twap(client, usd_size, ticker, side, duration, order_amount):
                 else:
                     print(f"single order size to low to execute twap || order size: {single_order} coins || min order size: {min_order_size_coin} coins")
         else:
-            print(f"not enough usd value to execute twap || available funds: {usd_value} $ || twap size: {usd_size} $")
+            print(f"not enough coins to execute Sell twap || available funds: {coin_balance} coins || twap size: {coin_sell_amount} coins")
 
     else:
         print(f"Error with side input || input: {side} || should be: b/s")
@@ -413,7 +413,13 @@ def set_linear_twap_usd(client):
     duration = cli_inputs.select_duration()
     order_amount = cli_inputs.select_order_amount()
 
-    twap_thread = Thread(target=linear_twap, args=(client, usd_size, ticker, side, duration, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}_twap{round(duration / 60, 1)}min").start()
+    if side == "s":
+        last_price = get_last_price(client, ticker)
+        coin_sell_amount = usd_size / last_price
+    elif side == "b":
+        coin_sell_amount = 0
+
+    twap_thread = Thread(target=linear_twap, args=(client, usd_size, coin_sell_amount, ticker, side, duration, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}_twap{round(duration / 60, 1)}min").start()
 
 
 def set_linear_twap_pct(client):
@@ -430,16 +436,18 @@ def set_linear_twap_pct(client):
     if side == "s":
         coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
         acc_pct = cli_inputs.select_pct()
-        usd_size = round(usd_value * acc_pct)
-    else:
+        coin_sell_amount = coin_balance * acc_pct
+        usd_size = 0
+    elif side == "b":
         usdt_balance = get_usdt_balance(client=client)
         acc_pct = cli_inputs.select_pct()
         usd_size = round(usdt_balance * acc_pct)
+        coin_sell_amount = 0
 
     duration = cli_inputs.select_duration()
     order_amount = cli_inputs.select_order_amount()
 
-    twap_thread = Thread(target=linear_twap, args=(client, usd_size, ticker, side, duration, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}_twap{round(duration / 60, 1)}min").start()
+    twap_thread = Thread(target=linear_twap, args=(client, usd_size, coin_sell_amount, ticker, side, duration, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}_twap{round(duration / 60, 1)}min").start()
 
 
 def set_market_order_usd(client):
