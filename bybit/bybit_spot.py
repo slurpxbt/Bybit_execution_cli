@@ -204,11 +204,9 @@ def limit_tranche(client, usd_size, ticker, side, upper_price, lower_price, orde
             client.place_order(category="spot", symbol=ticker, side=side, orderType="Limit", qty=order[0], price=order[1] ,timeInForce="GTC")
             time.sleep(0.01)
 
-        print("orders created")
-
 
 # market orders
-def market_order(client, usd_size, ticker, side):
+def market_order(client, usd_size, coin_sell_amount, ticker, side):
     """
     this order will split ur size into 20 equal orders and rapid execute them in 0.25s time intervals
 
@@ -225,7 +223,7 @@ def market_order(client, usd_size, ticker, side):
     if side == "b":
         usdt_balance = get_usdt_balance(client)
         side = "Buy"
-        if usd_size < usdt_balance:
+        if usd_size <= usdt_balance:
             single_order = int(usd_size / 20)
             if single_order > min_order_size_usd:
                 if single_order < max_order_size_usd:
@@ -239,11 +237,9 @@ def market_order(client, usd_size, ticker, side):
     elif side == "s":
         # min order size is in coins
         coin_balance, usd_value = get_coin_balance(client, ticker)
-        last_price = get_last_price(client, ticker)
-
-        coins_to_sell = round(usd_size / last_price, decimals)
+        coins_to_sell = coin_sell_amount
         side = "Sell"
-        if usd_value > usd_size:
+        if coin_balance >= coin_sell_amount:
             single_order = round(coins_to_sell / 20, decimals)
             if single_order > min_order_size_coin:
                 if single_order < max_order_size_coin:
@@ -313,8 +309,6 @@ def linear_twap(client, usd_size, coin_sell_amount ,ticker, side, duration, orde
     elif side == "s":
         # min order size is in coins
         coin_balance, usd_value = get_coin_balance(client, ticker)
-        last_price = get_last_price(client, ticker)
-
         coins_to_sell = coin_sell_amount
         side = "Sell"
         if coin_balance >= coin_sell_amount:
@@ -370,7 +364,7 @@ def set_limit_orders_usd(client):
     lower_price = cli_inputs.select_lower_limit_price()
     order_amount = cli_inputs.select_order_amount()
 
-    limit_tranche(client=client, usd_size=usd_size, ticker=ticker, side=side, upper_price=upper_price, lower_price=lower_price, order_amount=order_amount)
+    limit_thread = Thread(target=limit_tranche, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}limit_tranche").start()
 
 
 def set_limit_orders_pct(client):
@@ -396,7 +390,7 @@ def set_limit_orders_pct(client):
 
     order_amount = cli_inputs.select_order_amount()
 
-    limit_tranche(client=client, usd_size=usd_size ,ticker=ticker, side=side, upper_price=upper_price, lower_price=lower_price, order_amount=order_amount)
+    limit_thread = Thread(target=limit_tranche, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}limit_tranche").start()
 
 
 def set_linear_twap_usd(client):
@@ -463,7 +457,13 @@ def set_market_order_usd(client):
     side = cli_inputs.select_side()
     ticker = cli_inputs.select_ticker(tickers=tickers)
 
-    market_order_thread = Thread(target=market_order, args=(client, usd_size, ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
+    if side == "s":
+        last_price = get_last_price(client, ticker)
+        coin_sell_amount = usd_size / last_price
+    elif side == "b":
+        coin_sell_amount = 0
+
+    market_order_thread = Thread(target=market_order, args=(client, usd_size, coin_sell_amount, ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
 
 
 def set_market_order_pct(client):
@@ -473,7 +473,6 @@ def set_market_order_pct(client):
     :param client:
     :return:
     """
-    usdt_balance = get_usdt_balance(client=client)
 
     tickers = get_spot_usdt_tickers(client=client)
     ticker = cli_inputs.select_ticker(tickers=tickers)
@@ -482,13 +481,15 @@ def set_market_order_pct(client):
     if side == "s":
         coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
         acc_pct = cli_inputs.select_pct()
-        usd_size = round(usd_value * acc_pct)
+        coin_sell_amount = coin_balance * acc_pct
+        usd_size = 0
     else:
         usdt_balance = get_usdt_balance(client=client)
         acc_pct = cli_inputs.select_pct()
         usd_size = round(usdt_balance * acc_pct)
+        coin_sell_amount = 0
 
-    market_order_thread = Thread(target=market_order, args=(client, usd_size, ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
+    market_order_thread = Thread(target=market_order, args=(client, usd_size, coin_sell_amount ,ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
 
 # todo: TESTING
 # api_key, api_secret = get_credentials(account="personal")
