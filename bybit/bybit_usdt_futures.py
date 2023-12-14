@@ -873,7 +873,6 @@ def close_all_positions(client):
     :return:
     """
 
-
     positions = get_open_positions(client=client, display=False)
     if positions:
         print("Select duration in which you want to close all positions[minutes]")
@@ -910,11 +909,72 @@ def close_all_positions(client):
             print(f"started closing {ticker} {side_} || {coin_size} coins")
             linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60)}min").start()
     else:
-        print("No open positions")
+        print("\nNo open positions")
+
+
+def bid_IO_wipe(client):
+    """
+    Function that sets limits order in prefered % range below from current price >> it's buy only function
+    :param client:
+    :return:
+    """
+    tickers = get_usdt_futures_tickers(client=client)
+    print("\nSelect % below price where you want to bid > ex: [15-30% below current price]")
+    upper_pct = cli_inputs.select_upper_pct()
+    lower_pct = cli_inputs.select_lower_pct()
+
+    if upper_pct < lower_pct:
+        side = "b"
+
+        exit_ = False
+
+        tickers = get_usdt_futures_tickers(client=client)
+        while not exit_:
+
+            ticker = cli_inputs.select_ticker(tickers=tickers)
+            usd_size = cli_inputs.select_usdt_size()
+            last_price = get_last_price(client, ticker)
+
+            upper_price = last_price - (last_price * upper_pct)
+            lower_price = last_price - (last_price * lower_pct)
+
+            if usd_size <= 20000:
+                order_amount = 10
+            elif 20000 < usd_size <= 50000:
+                order_amount = 20
+            elif 50000 < usd_size <= 100000:
+                order_amount = 30
+            elif 100000 < usd_size <= 250000:
+                order_amount = 40
+            elif 250000 < usd_size <= 500000:
+                order_amount = 50
+            elif usd_size > 500000:
+                order_amount = 70
+
+            risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
+            if risk_ok:
+                limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
+
+            mode = 0
+            while mode not in [1,2]:
+                mode = int(input("add another coin bids/exit [1- another coin, 2-exit] >>> "))
+                if mode == 2:
+                    exit_ = True
+                elif mode not in [1,2]:
+                    print("Wrong input, input must be 1 or 2")
+    else:
+        print("\nUpper % must be lower number than lower %")
+
+
+
+
 
 # todo: TESTING
 # api_key, api_secret = get_credentials(account="personal")
 # client = auth(api_key, api_secret)
+
+
+# bid_IO_wipe(client)
 
 # close_all_positions(client)
 

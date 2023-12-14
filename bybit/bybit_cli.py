@@ -135,7 +135,8 @@ def bybit_futures_cli(account):
                   "\n 1 >> market orders"
                   "\n 2 >> limit orders"
                   "\n 3 >> TWAPS"
-                  "\n 4 >> set multiple TWAPS")
+                  "\n 4 >> set multiple TWAPS"
+                  "\n 5 >> Bid OI wipe")
             try:
                 order_mode = int(input("input number >>> "))
             except:
@@ -163,6 +164,8 @@ def bybit_futures_cli(account):
                 print("\n")
                 print("Select multiple TWAPS")
                 bybit_usdt_futures.set_multiple_twaps_open(client)
+            elif order_mode == 5:
+                bybit_usdt_futures.bid_IO_wipe(client)
 
         elif mode == 3:
             print("\n")
@@ -170,7 +173,8 @@ def bybit_futures_cli(account):
                   "\n 1 >> market orders"
                   "\n 2 >> limit orders"
                   "\n 3 >> TWAPS"
-                  "\n 4 >> set multiple TWAPS")
+                  "\n 4 >> set multiple TWAPS"
+                  "\n 5 >> close all positions")
             try:
                 order_mode = int(input("input number >>> "))
             except:
@@ -185,6 +189,8 @@ def bybit_futures_cli(account):
                 bybit_usdt_futures.set_linear_twap_close(client)
             elif order_mode == 4:
                 bybit_usdt_futures.set_multiple_twaps_close(client)
+            elif order_mode == 5:
+                bybit_usdt_futures.close_all_positions(client)
 
         elif mode == 4:
             bybit_usdt_futures.set_position_sl_tp(client)

@@ -106,6 +106,7 @@ def select_pct():
 
 def select_upper_limit_price():
     """
+
     :return: upper limit price for limit order tranche
     """
     price_selected = False
@@ -163,3 +164,47 @@ def select_lookback_window():
             return input_number
         except:
             print("Error selecting lookback window")
+
+
+def select_upper_pct():
+    """
+    :return: % in basis points from 0-1
+    """
+    pct_selected = False
+    while not pct_selected:
+
+        pct_input = input("select upper % point of where you want to bid >>> ")
+        try:
+            if 0 < float(pct_input) <= 100:
+                pct_input = float(pct_input) / 100
+                if pct_input == 100:
+                    pct_input = 99.9
+
+                pct_selected = True
+                return pct_input
+            else:
+                print("Error choose % between 1 and 100")
+        except:
+            print("Error selecting %: input must be number")
+
+
+def select_lower_pct():
+    """
+    :return: % in basis points from 0-1
+    """
+    pct_selected = False
+    while not pct_selected:
+
+        pct_input = input("select lower % point of where you want to bid >>> ")
+        try:
+            if 0 < float(pct_input) <= 100:
+                pct_input = float(pct_input) / 100
+                if pct_input == 100:
+                    pct_input = 99.9
+
+                pct_selected = True
+                return pct_input
+            else:
+                print("Error choose % between 1 and 100")
+        except:
+            print("Error selecting %: input must be number")
