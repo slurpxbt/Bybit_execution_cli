@@ -866,9 +866,57 @@ def set_multiple_twaps_close(client):
                 print("Wrong input, input must be 1 or 2")
 
 
+def close_all_positions(client):
+    """
+    Function that close all open positions
+    :param client:
+    :return:
+    """
+
+
+    positions = get_open_positions(client=client, display=False)
+    if positions:
+        print("Select duration in which you want to close all positions[minutes]")
+        duration = cli_inputs.select_duration()
+        for close_id in positions.keys():
+            position = positions[close_id]
+            ticker = position["symbol"]
+            side = position["side"]
+            coin_size = float(position["size"])
+            usd_value = float(position["positionValue"])
+
+            if side == "Buy":
+                side_ = "long"
+                side = "s"
+            elif side == "Sell":
+                side_ = "short"
+                side = "b"
+
+            if usd_value <= 20000:
+                order_amount = 20
+            elif 20000 < usd_value <= 50000:
+                order_amount = 50
+            elif 50000 < usd_value <= 100000:
+                order_amount = 100
+            elif 100000 < usd_value <= 250000:
+                order_amount = 150
+            elif 250000 < usd_value <= 500000:
+                order_amount = 200
+            elif 500000 < usd_value <= 1000000:
+                order_amount = 300
+            elif usd_value > 1000000:
+                order_amount = 400
+
+            print(f"started closing {ticker} {side_} || {coin_size} coins")
+            linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60)}min").start()
+    else:
+        print("No open positions")
+
 # todo: TESTING
 # api_key, api_secret = get_credentials(account="personal")
 # client = auth(api_key, api_secret)
+
+# close_all_positions(client)
 
 # set_multiple_twaps_open(client)
 # set_multiple_twaps_close(client)
