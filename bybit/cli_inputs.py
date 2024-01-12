@@ -1,4 +1,53 @@
 # CLI inputs
+from pybit.unified_trading import HTTP
+import pandas as pd
+
+def auth():
+    bybit_client = HTTP(testnet=False, api_key="", api_secret="")
+    return bybit_client
+
+
+def ob_depth(ticker):
+    client = auth()
+    btc_ob = client.get_orderbook(category="linear", symbol=ticker, limit=200)["result"]
+
+    bids = btc_ob["b"]
+    asks = btc_ob["a"]
+    bid_df = pd.DataFrame(bids, columns=["price", "size"])
+    ask_df = pd.DataFrame(asks, columns=["price", "size"])
+
+    bid_df["price"] = pd.to_numeric(bid_df["price"])
+    bid_df["size"] = pd.to_numeric(bid_df["size"])
+
+    bid_depth = round(abs(((bid_df["price"].head(1).values[0] / bid_df["price"].tail(1).values[0])-1) * 100), 4)
+    avg_bid_price = bid_df["price"].mean()
+    total_bid_size_coins = bid_df["size"].sum()
+    bid_usd_depth = avg_bid_price * total_bid_size_coins
+
+    if bid_usd_depth > 1000000:
+        bid_usd_depth = f"{round(bid_usd_depth / 1000000, 3)} Mil"
+    else:
+        bid_usd_depth = f"{round(bid_usd_depth / 1000, 3)} k"
+
+
+    ask_df["price"] = pd.to_numeric(ask_df["price"])
+    ask_df["size"] = pd.to_numeric(ask_df["size"])
+
+    ask_depth = round(abs(((ask_df["price"].head(1).values[0] / ask_df["price"].tail(1).values[0]) - 1) * 100), 4)
+    avg_ask_price = ask_df["price"].mean()
+    total_ask_size_coins = ask_df["size"].sum()
+    ask_usd_depth = avg_ask_price * total_ask_size_coins
+
+    if ask_usd_depth > 1000000:
+        ask_usd_depth = f"{round(ask_usd_depth / 1000000, 3)} Mil"
+    else:
+        ask_usd_depth = f"{round(ask_usd_depth / 1000, 3)} k"
+
+    print(f"ob data for: {ticker}")
+    print(f"BID: 200_level depth: {bid_depth} % | usd dept: {bid_usd_depth}")
+    print(f"ASK: 200_level depth: {ask_depth} % | usd dept: {ask_usd_depth}")
+
+
 def select_ticker(tickers):
     ticker_selected = False
     while not ticker_selected:
@@ -6,6 +55,8 @@ def select_ticker(tickers):
             input_ticker = input("select ticker[without denominator -> ex: btc] >>> ")
             ticker = tickers[input_ticker.upper()]
             print(f"{ticker} selected")
+            ob_depth(ticker)
+
             ticker_selected = True
             return ticker
         except:
@@ -93,8 +144,6 @@ def select_pct():
         try:
             if 0 < float(pct_input) <= 100:
                 pct_input = float(pct_input) / 100
-                if pct_input == 100:
-                    pct_input = 99.9
 
                 pct_selected = True
                 return pct_input
@@ -106,7 +155,6 @@ def select_pct():
 
 def select_upper_limit_price():
     """
-
     :return: upper limit price for limit order tranche
     """
     price_selected = False
