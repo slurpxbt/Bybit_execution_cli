@@ -360,9 +360,9 @@ def set_limit_orders_usd(client):
     :return:
     """
     tickers = get_spot_usdt_tickers(client=client)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     usd_size = cli_inputs.select_usdt_size()
     side = cli_inputs.select_side()
-    ticker = cli_inputs.select_ticker(tickers=tickers)
     upper_price = cli_inputs.select_upper_limit_price()
     lower_price = cli_inputs.select_lower_limit_price()
     order_amount = cli_inputs.select_order_amount()
@@ -377,7 +377,7 @@ def set_limit_orders_pct(client):
        :return:
        """
     tickers = get_spot_usdt_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     side = cli_inputs.select_side()
     upper_price = cli_inputs.select_upper_limit_price()
     lower_price = cli_inputs.select_lower_limit_price()
@@ -385,10 +385,14 @@ def set_limit_orders_pct(client):
     if side == "s":
         coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
         acc_pct = cli_inputs.select_pct()
+        if acc_pct == 1:
+            acc_pct = 0.999
         usd_size = round((coin_balance * avg_prc * 0.999) * acc_pct)
     else:
         usdt_balance = get_usdt_balance(client=client)
         acc_pct = cli_inputs.select_pct()
+        if acc_pct == 1:
+            acc_pct = 0.999
         usd_size = round(usdt_balance * acc_pct)
 
     order_amount = cli_inputs.select_order_amount()
@@ -404,9 +408,9 @@ def set_linear_twap_usd(client):
     :return:
     """
     tickers = get_spot_usdt_tickers(client=client)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     usd_size = cli_inputs.select_usdt_size()
     side = cli_inputs.select_side()
-    ticker = cli_inputs.select_ticker(tickers=tickers)
     duration = cli_inputs.select_duration()
     order_amount = cli_inputs.select_order_amount()
 
@@ -427,17 +431,21 @@ def set_linear_twap_pct(client):
     :return:
     """
     tickers = get_spot_usdt_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     side = cli_inputs.select_side()
 
     if side == "s":
         coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
         acc_pct = cli_inputs.select_pct()
+        if acc_pct == 1:
+            acc_pct = 0.999
         coin_sell_amount = coin_balance * acc_pct
         usd_size = 0
     elif side == "b":
         usdt_balance = get_usdt_balance(client=client)
         acc_pct = cli_inputs.select_pct()
+        if acc_pct == 1:
+            acc_pct = 0.999
         usd_size = round(usdt_balance * acc_pct)
         coin_sell_amount = 0
 
@@ -457,9 +465,10 @@ def set_market_order_usd(client):
     """
 
     tickers = get_spot_usdt_tickers(client=client)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     usd_size = cli_inputs.select_usdt_size()
     side = cli_inputs.select_side()
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+
 
     if side == "s":
         last_price = get_last_price(client, ticker)
@@ -479,17 +488,22 @@ def set_market_order_pct(client):
     """
 
     tickers = get_spot_usdt_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     side = cli_inputs.select_side()
 
     if side == "s":
         coin_balance, usd_value = get_coin_balance(client=client, ticker=ticker)
         acc_pct = cli_inputs.select_pct()
+        if acc_pct == 1:
+            acc_pct = 0.999
+
         coin_sell_amount = coin_balance * acc_pct
         usd_size = 0
     else:
         usdt_balance = get_usdt_balance(client=client)
         acc_pct = cli_inputs.select_pct()
+        if acc_pct == 1:
+            acc_pct = 0.999
         usd_size = round(usdt_balance * acc_pct)
         coin_sell_amount = 0
 

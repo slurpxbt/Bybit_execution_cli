@@ -712,7 +712,7 @@ def set_market_order_open(client):
     """
 
     tickers = get_usdt_futures_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
 
     side = cli_inputs.select_side()
     usd_size = cli_inputs.select_usdt_size()
@@ -741,7 +741,7 @@ def set_market_order_close(client):
 
 def set_linear_twap_open(client):
     tickers = get_usdt_futures_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
 
     side = cli_inputs.select_side()
     usd_size = cli_inputs.select_usdt_size()
@@ -774,7 +774,7 @@ def set_linear_twap_close(client):
 
 def set_limits_open(client):
     tickers = get_usdt_futures_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
     side = cli_inputs.select_side()
     usd_size = cli_inputs.select_usdt_size()
     upper_price = cli_inputs.select_upper_limit_price()
@@ -822,7 +822,7 @@ def set_multiple_twaps_open(client):
     twaps = []
     mode = 0
     while not exit_:
-        ticker = cli_inputs.select_ticker(tickers=tickers)
+        ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
         side = cli_inputs.select_side()
         usd_size = cli_inputs.select_usdt_size()
         order_amount = cli_inputs.select_order_amount()
@@ -931,7 +931,7 @@ def bid_IO_wipe(client):
         tickers = get_usdt_futures_tickers(client=client)
         while not exit_:
 
-            ticker = cli_inputs.select_ticker(tickers=tickers)
+            ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
             usd_size = cli_inputs.select_usdt_size()
             last_price = get_last_price(client, ticker)
 
@@ -969,12 +969,12 @@ def bid_IO_wipe(client):
 
 
 
+
 # todo: TESTING
 # api_key, api_secret = get_credentials(account="personal")
 # client = auth(api_key, api_secret)
 
 
-# bid_IO_wipe(client)
 
 # close_all_positions(client)
 

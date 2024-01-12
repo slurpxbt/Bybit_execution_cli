@@ -7,12 +7,15 @@ def auth():
     return bybit_client
 
 
-def ob_depth(ticker):
+def ob_depth(ticker, spot:bool):
     client = auth()
-    btc_ob = client.get_orderbook(category="linear", symbol=ticker, limit=200)["result"]
+    if spot:
+        ob = client.get_orderbook(category="spot", symbol=ticker, limit=200)["result"]
+    else:
+        ob = client.get_orderbook(category="linear", symbol=ticker, limit=200)["result"]
 
-    bids = btc_ob["b"]
-    asks = btc_ob["a"]
+    bids = ob["b"]
+    asks = ob["a"]
     bid_df = pd.DataFrame(bids, columns=["price", "size"])
     ask_df = pd.DataFrame(asks, columns=["price", "size"])
 
@@ -28,7 +31,6 @@ def ob_depth(ticker):
         bid_usd_depth = f"{round(bid_usd_depth / 1000000, 3)} Mil"
     else:
         bid_usd_depth = f"{round(bid_usd_depth / 1000, 3)} k"
-
 
     ask_df["price"] = pd.to_numeric(ask_df["price"])
     ask_df["size"] = pd.to_numeric(ask_df["size"])
@@ -48,14 +50,14 @@ def ob_depth(ticker):
     print(f"ASK: 200_level depth: {ask_depth} % | usd dept: {ask_usd_depth}")
 
 
-def select_ticker(tickers):
+def select_ticker(tickers, spot:bool):
     ticker_selected = False
     while not ticker_selected:
         try:
             input_ticker = input("select ticker[without denominator -> ex: btc] >>> ")
             ticker = tickers[input_ticker.upper()]
             print(f"{ticker} selected")
-            ob_depth(ticker)
+            ob_depth(ticker, spot)
 
             ticker_selected = True
             return ticker
