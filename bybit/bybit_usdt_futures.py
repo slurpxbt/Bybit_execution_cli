@@ -299,8 +299,8 @@ def set_position_sl_tp(client):
                     else:
                         print("no modifications were made")
 
-            else:
-                print("ID not found in positions")
+        else:
+            print("ID not found in positions")
 
 
 # market orders
@@ -641,7 +641,6 @@ def limit_tranche_close(client, coin_size, ticker, side, upper_price, lower_pric
 
 
 
-
 # risk limit check
 def check_risk_limit(client, ticker, usd_size, side):
 
@@ -717,10 +716,7 @@ def set_market_order_open(client):
     side = cli_inputs.select_side()
     usd_size = cli_inputs.select_usdt_size()
 
-    risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
-
-    if risk_ok:
-        market_order_thread = Thread(target=market_order_open, args=(client, ticker, side, usd_size), name=f"FUTURES_{ticker}_{side}_{usd_size}").start()
+    market_order_thread = Thread(target=market_order_open, args=(client, ticker, side, usd_size), name=f"FUTURES_{ticker}_{side}_{usd_size}").start()
 
 
 def set_market_order_close(client):
@@ -748,10 +744,7 @@ def set_linear_twap_open(client):
     duration = cli_inputs.select_duration()
     order_amount = cli_inputs.select_order_amount()
 
-    risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
-
-    if risk_ok:
-        linear_twap_thread = Thread(target=linear_twap_open, args=(client, ticker, side, usd_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{usd_size}_twap{round(duration / 60)}min").start()
+    linear_twap_thread = Thread(target=linear_twap_open, args=(client, ticker, side, usd_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{usd_size}_twap{round(duration / 60)}min").start()
 
 
 def set_linear_twap_close(client):
@@ -781,10 +774,10 @@ def set_limits_open(client):
     lower_price = cli_inputs.select_lower_limit_price()
     order_amount = cli_inputs.select_order_amount()
 
-    risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
 
-    if risk_ok:
-        limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
+
+
+    limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
 
 
 def set_limits_close(client):
@@ -829,10 +822,8 @@ def set_multiple_twaps_open(client):
         duration = cli_inputs.select_duration()
         print("\n")
 
-        risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
-        if risk_ok:
-            twaps.append([ticker,side, usd_size, duration, order_amount])
-            mode = 0
+        twaps.append([ticker,side, usd_size, duration, order_amount])
+        mode = 0
 
         while mode not in [1,2]:
             mode = int(input("add another twap/exit [1- another twap, 2-exit] >>> "))
@@ -891,20 +882,36 @@ def close_all_positions(client):
                 side_ = "short"
                 side = "b"
 
-            if usd_value <= 20000:
-                order_amount = 20
-            elif 20000 < usd_value <= 50000:
-                order_amount = 50
-            elif 50000 < usd_value <= 100000:
-                order_amount = 100
-            elif 100000 < usd_value <= 250000:
-                order_amount = 150
-            elif 250000 < usd_value <= 500000:
-                order_amount = 200
-            elif 500000 < usd_value <= 1000000:
-                order_amount = 300
-            elif usd_value > 1000000:
-                order_amount = 400
+            if duration > 400:
+                if usd_value <= 20000:
+                    order_amount = 20
+                elif 20000 < usd_value <= 50000:
+                    order_amount = 50
+                elif 50000 < usd_value <= 100000:
+                    order_amount = 100
+                elif 100000 < usd_value <= 250000:
+                    order_amount = 150
+                elif 250000 < usd_value <= 500000:
+                    order_amount = 200
+                elif 500000 < usd_value <= 1000000:
+                    order_amount = 300
+                elif usd_value > 1000000:
+                    order_amount = 400
+            else:
+                if usd_value <= 20000:
+                    order_amount = 1
+                elif 20000 < usd_value <= 50000:
+                    order_amount = 3
+                elif 50000 < usd_value <= 100000:
+                    order_amount = 5
+                elif 100000 < usd_value <= 250000:
+                    order_amount = 10
+                elif 250000 < usd_value <= 500000:
+                    order_amount = 15
+                elif 500000 < usd_value <= 1000000:
+                    order_amount = 30
+                elif usd_value > 1000000:
+                    order_amount = 45
 
             print(f"started closing {ticker} {side_} || {coin_size} coins")
             linear_twap_thread = Thread(target=linear_twap_close, args=(client, ticker, side, coin_size, duration, order_amount), name=f"FUTURES_{ticker}_{side}_{coin_size}_coins_twap{round(duration / 60)}min").start()
@@ -951,9 +958,8 @@ def bid_IO_wipe(client):
             elif usd_size > 500000:
                 order_amount = 70
 
-            risk_ok = check_risk_limit(client=client, ticker=ticker, usd_size=usd_size, side=side)
-            if risk_ok:
-                limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
+
+            limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
 
             mode = 0
             while mode not in [1,2]:
@@ -967,14 +973,12 @@ def bid_IO_wipe(client):
 
 
 
-
-
-
 # todo: TESTING
 # api_key, api_secret = get_credentials(account="personal")
 # client = auth(api_key, api_secret)
 
 
+# bid_IO_wipe(client)
 
 # close_all_positions(client)
 
