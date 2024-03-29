@@ -30,7 +30,8 @@ def ob_depth(ticker, spot:bool):
     if bid_usd_depth > 1000000:
         bid_usd_depth = f"{round(bid_usd_depth / 1000000, 3)} Mil"
     else:
-        bid_usd_depth = f"{round(bid_usd_depth / 1000, 3)} k"
+        bid_usd_depth = f"{round(bid_usd_depth / 1000, 1)} k"
+
 
     ask_df["price"] = pd.to_numeric(ask_df["price"])
     ask_df["size"] = pd.to_numeric(ask_df["size"])
@@ -43,11 +44,11 @@ def ob_depth(ticker, spot:bool):
     if ask_usd_depth > 1000000:
         ask_usd_depth = f"{round(ask_usd_depth / 1000000, 3)} Mil"
     else:
-        ask_usd_depth = f"{round(ask_usd_depth / 1000, 3)} k"
+        ask_usd_depth = f"{round(ask_usd_depth / 1000, 1)} k"
 
     print(f"ob data for: {ticker}")
-    print(f"BID: 200_level depth: {bid_depth} % | usd dept: {bid_usd_depth}")
-    print(f"ASK: 200_level depth: {ask_depth} % | usd dept: {ask_usd_depth}")
+    print(f"BID: 200_level depth: {bid_depth} % | usd depth: {bid_usd_depth}")
+    print(f"ASK: 200_level depth: {ask_depth} % | usd depth: {ask_usd_depth}")
 
 
 def select_ticker(tickers, spot:bool):
@@ -157,6 +158,7 @@ def select_pct():
 
 def select_upper_limit_price():
     """
+
     :return: upper limit price for limit order tranche
     """
     price_selected = False
@@ -227,8 +229,6 @@ def select_upper_pct():
         try:
             if 0 < float(pct_input) <= 100:
                 pct_input = float(pct_input) / 100
-                if pct_input == 100:
-                    pct_input = 99.9
 
                 pct_selected = True
                 return pct_input
@@ -249,8 +249,6 @@ def select_lower_pct():
         try:
             if 0 < float(pct_input) <= 100:
                 pct_input = float(pct_input) / 100
-                if pct_input == 100:
-                    pct_input = 99.9
 
                 pct_selected = True
                 return pct_input
