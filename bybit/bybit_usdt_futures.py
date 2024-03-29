@@ -766,6 +766,9 @@ def set_linear_twap_close(client):
 
 
 def set_limits_open(client):
+
+    positions = get_open_positions(client, False)
+
     tickers = get_usdt_futures_tickers(client=client)
     ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
     side = cli_inputs.select_side()
@@ -774,7 +777,45 @@ def set_limits_open(client):
     lower_price = cli_inputs.select_lower_limit_price()
     order_amount = cli_inputs.select_order_amount()
 
+    position_exits = False
+    position = None
+    for key, value in positions.items():
+        if value["symbol"] == ticker:
+            position_exits = True
+            position = value
+            break
 
+    if not position_exits:
+        # do you want to place sl ?
+        sl_check = 0
+        while sl_check not in [1, 2]:
+            sl_check = int(input("Do you want to place stoploss ?[1 > yes, 2 > no] >>> "))
+            if sl_check in [1, 2]:
+                if sl_check == 1:
+                    sl_price_ok = False
+                    sl_side = None
+                    while not sl_price_ok:
+                        if side == "b":
+                            sl_price = float(input("Choose stoploss price >>> "))
+                            try:
+                                if sl_price > 0 and sl_price < lower_price:
+                                    sl_price_ok = True
+                                    sl_side = "Sell"
+                                    client.place_order(category="linear", symbol=ticker, side=sl_side, orderType="Market", qty="0", triggerDirection=2, timeInForce="IOC", reduceOnly=True, closeOnTrigger=True, triggerBy="LastPrice", triggerPrice=str(sl_price))
+                            except:
+                                print("Wrong stoploss input, must be number and lower than lowest limit order")
+
+                        elif side == "s":
+                            sl_price = float(input("Choose stoploss price >>> "))
+                            try:
+                                if sl_price > upper_price:
+                                    sl_price_ok = True
+                                    sl_side = "Buy"
+                                    client.place_order(category="linear", symbol=ticker, side=sl_side, orderType="Market", qty="0", triggerDirection=1, timeInForce="IOC", reduceOnly=True, closeOnTrigger=True, triggerBy="LastPrice", triggerPrice=str(sl_price))
+                            except:
+                                print("Wrong stoploss input, must be number and higher than highest limit order")
+            else:
+                print("wrong input, try again")
 
 
     limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
@@ -974,9 +1015,10 @@ def bid_IO_wipe(client):
 
 
 # todo: TESTING
-# api_key, api_secret = get_credentials(account="personal")
-# client = auth(api_key, api_secret)
+api_key, api_secret = get_credentials(account="personal")
+client = auth(api_key, api_secret)
 
+# set_limits_open(client)
 
 # bid_IO_wipe(client)
 
