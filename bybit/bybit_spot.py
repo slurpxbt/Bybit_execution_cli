@@ -205,7 +205,6 @@ def limit_tranche(client, usd_size, ticker, side, upper_price, lower_price, orde
             time.sleep(0.01)
 
 
-
 # market orders
 def market_order(client, usd_size, coin_sell_amount, ticker, side):
     """
@@ -310,8 +309,6 @@ def linear_twap(client, usd_size, coin_sell_amount ,ticker, side, duration, orde
     elif side == "s":
         # min order size is in coins
         coin_balance, usd_value = get_coin_balance(client, ticker)
-        last_price = get_last_price(client, ticker)
-
         coins_to_sell = coin_sell_amount
         side = "Sell"
         if coin_balance >= coin_sell_amount:
@@ -408,8 +405,8 @@ def set_linear_twap_usd(client):
     :return:
     """
     tickers = get_spot_usdt_tickers(client=client)
-    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     usd_size = cli_inputs.select_usdt_size()
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     side = cli_inputs.select_side()
     duration = cli_inputs.select_duration()
     order_amount = cli_inputs.select_order_amount()
@@ -455,7 +452,6 @@ def set_linear_twap_pct(client):
     twap_thread = Thread(target=linear_twap, args=(client, usd_size, coin_sell_amount, ticker, side, duration, order_amount), name=f"BYBIT_SPOT_{ticker}_{side}_{usd_size}_twap{round(duration / 60, 1)}min").start()
 
 
-
 def set_market_order_usd(client):
     """
     Basic market order executes in 20 swarm orders
@@ -468,7 +464,6 @@ def set_market_order_usd(client):
     ticker = cli_inputs.select_ticker(tickers=tickers, spot=True)
     usd_size = cli_inputs.select_usdt_size()
     side = cli_inputs.select_side()
-
 
     if side == "s":
         last_price = get_last_price(client, ticker)
@@ -496,7 +491,6 @@ def set_market_order_pct(client):
         acc_pct = cli_inputs.select_pct()
         if acc_pct == 1:
             acc_pct = 0.999
-
         coin_sell_amount = coin_balance * acc_pct
         usd_size = 0
     else:
@@ -510,6 +504,8 @@ def set_market_order_pct(client):
     market_order_thread = Thread(target=market_order, args=(client, usd_size, coin_sell_amount ,ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
 
 # todo: TESTING
+# api_key, api_secret = get_credentials(account="personal")
+# client = auth(api_key, api_secret)
 #
 # get_all_spot_positions(client)
 

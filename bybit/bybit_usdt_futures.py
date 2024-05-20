@@ -1015,8 +1015,8 @@ def bid_IO_wipe(client):
 
 
 # todo: TESTING
-api_key, api_secret = get_credentials(account="personal")
-client = auth(api_key, api_secret)
+# api_key, api_secret = get_credentials(account="personal")
+# client = auth(api_key, api_secret)
 
 # set_limits_open(client)
 
