@@ -25,7 +25,8 @@ def bybit_spot_cli(account):
               "\n 1 >> display positions"
               "\n 2 >> market orders"
               "\n 3 >> limit orders"
-              "\n 4 >> TWAPS"
+              "\n 4 >> limits at bid/ask"
+              "\n 5 >> TWAPS"
               "\n 0 >> exit - bybit SPOT"
               "\n 99 >> restart client"
               "\n 999 >> check current running processes")
@@ -77,6 +78,24 @@ def bybit_spot_cli(account):
 
             print("\n")
         elif mode == 4:
+            print("\n")
+            print("Limit at bid/ask order mode selected >> options:"
+                  "\n 1 >> limit orders by $ amount"
+                  "\n 2 >> limit orders by account %"
+                  )
+            try:
+                order_mode = int(input("input number >>> "))
+            except:
+                print("input must be number")
+                order_mode = 0
+
+            if order_mode == 1:
+                bybit_spot.set_limit_orders_usd_bidask(client)
+            elif order_mode == 2:
+                bybit_spot.set_limit_orders_pct_bidask(client)
+
+            print("\n")
+        elif mode == 5:
             print("\n")
             print("TWAP mode selected >> options:"
                   "\n 1 >> linear twap by $ amount"
@@ -134,9 +153,10 @@ def bybit_futures_cli(account):
             print("Open position mode selected >> options:"
                   "\n 1 >> market orders"
                   "\n 2 >> limit orders"
-                  "\n 3 >> TWAPS"
-                  "\n 4 >> set multiple TWAPS"
-                  "\n 5 >> Bid OI wipe")
+                  "\n 3 >> limits at bid/ask"
+                  "\n 4 >> TWAPS"
+                  "\n 5 >> set multiple TWAPS"
+                  "\n 6 >> Bid OI wipe")
             try:
                 order_mode = int(input("input number >>> "))
             except:
@@ -146,25 +166,16 @@ def bybit_futures_cli(account):
             if order_mode == 1:
                 bybit_usdt_futures.set_market_order_open(client)
             elif order_mode == 2:
-                print("\n")
-                print("Limit order mode seleceted >> options:"
-                      "\n 1 >> limit orders between 2 prices by $ amount"
-                      )
-                try:
-                    limit_order_mode = int(input("input number >>> "))
-                except:
-                    print("input must be number")
-                    limit_order_mode = 0
-
-                if limit_order_mode == 1:
-                    bybit_usdt_futures.set_limits_open(client)
+                bybit_usdt_futures.set_limits_open(client)
             elif order_mode == 3:
-                bybit_usdt_futures.set_linear_twap_open(client)
+                bybit_usdt_futures.set_limits_at_bidask_open(client)
             elif order_mode == 4:
+                bybit_usdt_futures.set_linear_twap_open(client)
+            elif order_mode == 5:
                 print("\n")
                 print("Select multiple TWAPS")
                 bybit_usdt_futures.set_multiple_twaps_open(client)
-            elif order_mode == 5:
+            elif order_mode == 6:
                 bybit_usdt_futures.bid_IO_wipe(client)
 
         elif mode == 3:
@@ -172,9 +183,10 @@ def bybit_futures_cli(account):
             print("Close / reduce position mode selected >> options:"
                   "\n 1 >> market orders"
                   "\n 2 >> limit orders"
-                  "\n 3 >> TWAPS"
-                  "\n 4 >> set multiple TWAPS"
-                  "\n 5 >> close all positions")
+                  "\n 3 >> limits at bid/ask"
+                  "\n 4 >> TWAPS"
+                  "\n 5 >> set multiple TWAPS"
+                  "\n 6 >> close all positions")
             try:
                 order_mode = int(input("input number >>> "))
             except:
@@ -186,10 +198,12 @@ def bybit_futures_cli(account):
             elif order_mode == 2:
                 bybit_usdt_futures.set_limits_close(client)
             elif order_mode == 3:
-                bybit_usdt_futures.set_linear_twap_close(client)
+                bybit_usdt_futures.set_limits_at_bidask_close(client)
             elif order_mode == 4:
-                bybit_usdt_futures.set_multiple_twaps_close(client)
+                bybit_usdt_futures.set_linear_twap_close(client)
             elif order_mode == 5:
+                bybit_usdt_futures.set_multiple_twaps_close(client)
+            elif order_mode == 6:
                 bybit_usdt_futures.close_all_positions(client)
 
         elif mode == 4:
@@ -211,8 +225,8 @@ def main():
     while not exit:
         print("\n")
         print("Select account:"
-              "\n 1 >> Bybit SPOT - personal"
-              "\n 2 >> Bybit USDT perps - personal"
+              "\n 1 >> Bybit SPOT"
+              "\n 2 >> Bybit USDT perps"
               "\n 999 >> check current running processes"
               "\n 0 >> exit terminal")
 
@@ -232,7 +246,6 @@ def main():
         elif mode == 2:
             print("\n")
             bybit_futures_cli(account="personal")
-
 
 if __name__ == "__main__":
     main()

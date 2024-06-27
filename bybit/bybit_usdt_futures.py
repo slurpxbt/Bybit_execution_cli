@@ -534,7 +534,7 @@ def linear_twap_close(client, ticker, side, coin_size, duration, order_amount):
 
 # limit oders
 
-def limit_tranche_open(client, usd_size, ticker, side, upper_price, lower_price, order_amount):
+def limit_tranche_open(client, usd_size, ticker, side, upper_price, lower_price, order_amount, bid_ask:bool):
     """
 
     :param client: bybit client
@@ -559,21 +559,24 @@ def limit_tranche_open(client, usd_size, ticker, side, upper_price, lower_price,
         side = "Sell"
 
     error = True
-    if upper_price > lower_price:
-        if side == "Buy":
-            if last_price > upper_price:
-                error = False
+    if not bid_ask:
+        if upper_price > lower_price:
+            if side == "Buy":
+                if last_price > upper_price:
+                    error = False
+                else:
+                    print("on buy side last price should be higher than upper price limit")
+            elif side == "Sell":
+                if last_price < lower_price:
+                    error = False
+                else:
+                    print("on sell side last price should be lower than lower price limit")
             else:
-                print("on buy side last price should be higher than upper price limit")
-        elif side == "Sell":
-            if last_price < lower_price:
-                error = False
-            else:
-                print("on sell side last price should be lower than lower price limit")
+                print(f"Error with side input || input: {side} || should be: b/s")
         else:
-            print(f"Error with side input || input: {side} || should be: b/s")
+            print("upper price limit should be higher than lower price limit")
     else:
-        print("upper price limit should be higher than lower price limit")
+        error = False
 
     if not error:
         single_order = int(usd_size / order_amount)
@@ -587,7 +590,7 @@ def limit_tranche_open(client, usd_size, ticker, side, upper_price, lower_price,
             time.sleep(0.01)
 
 
-def limit_tranche_close(client, coin_size, ticker, side, upper_price, lower_price, order_amount):
+def limit_tranche_close(client, coin_size, ticker, side, upper_price, lower_price, order_amount, bid_ask:bool):
     """
 
     :param client: bybit client
@@ -612,21 +615,24 @@ def limit_tranche_close(client, coin_size, ticker, side, upper_price, lower_pric
         side = "Sell"
 
     error = True
-    if upper_price > lower_price:
-        if side == "Buy":
-            if last_price > upper_price:
-                error = False
+    if not bid_ask:
+        if upper_price > lower_price:
+            if side == "Buy":
+                if last_price > upper_price:
+                    error = False
+                else:
+                    print("on buy side last price should be higher than upper price limit")
+            elif side == "Sell":
+                if last_price < lower_price:
+                    error = False
+                else:
+                    print("on sell side last price should be lower than lower price limit")
             else:
-                print("on buy side last price should be higher than upper price limit")
-        elif side == "Sell":
-            if last_price < lower_price:
-                error = False
-            else:
-                print("on sell side last price should be lower than lower price limit")
+                print(f"Error with side input || input: {side} || should be: b/s")
         else:
-            print(f"Error with side input || input: {side} || should be: b/s")
+            print("upper price limit should be higher than lower price limit")
     else:
-        print("upper price limit should be higher than lower price limit")
+        error = False
 
     if not error:
         single_order = round(coin_size / order_amount, decimals)
@@ -776,7 +782,7 @@ def set_limits_open(client):
     upper_price = cli_inputs.select_upper_limit_price()
     lower_price = cli_inputs.select_lower_limit_price()
     order_amount = cli_inputs.select_order_amount()
-
+    bid_ask = False
     position_exits = False
     position = None
     for key, value in positions.items():
@@ -818,13 +824,13 @@ def set_limits_open(client):
                 print("wrong input, try again")
 
 
-    limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
+    limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount, bid_ask), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
 
 
 def set_limits_close(client):
     close_id, ticker, side, size, usd_value = select_close_id_futures(client)
     max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
-
+    bid_ask = False
     close = False
     while not close:
         close_by = input("close by: usd size or % [1-usd, 2-%] >>> ")
@@ -845,7 +851,116 @@ def set_limits_close(client):
     order_amount = cli_inputs.select_order_amount()
 
     if close:
-        limit_close_thread = Thread(target=limit_tranche_close, args=(client, coin_size, ticker, side, upper_price, lower_price, order_amount), name=f"FUTURES_{ticker}_{side}_limit_tranche_{coin_size}").start()
+        limit_close_thread = Thread(target=limit_tranche_close, args=(client, coin_size, ticker, side, upper_price, lower_price, order_amount, bid_ask), name=f"FUTURES_{ticker}_{side}_limit_tranche_{coin_size}").start()
+
+
+def set_limits_at_bidask_open(client):
+    positions = get_open_positions(client, False)
+
+    tickers = get_usdt_futures_tickers(client=client)
+    ticker = cli_inputs.select_ticker(tickers=tickers, spot=False)
+    max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
+    tick_decimals = str(tick_size)[::-1].find('.')
+
+    side = cli_inputs.select_side()
+    usd_size = cli_inputs.select_usdt_size()
+
+    bps_range = 0.004
+    if ticker in ["BTCUSDT", "ETHUSDT"]:
+        bps_range = 0.001
+    last_price = get_last_price(client, ticker)
+
+    if side == "b":
+        upper_price = last_price
+        lower_price = round( upper_price - (last_price * bps_range) ,tick_decimals)
+    elif side == "s":
+        lower_price = last_price
+        upper_price = round(lower_price + (last_price * bps_range), tick_decimals)
+
+    order_amount = 10
+    bid_ask = True
+
+    position_exits = False
+    position = None
+    for key, value in positions.items():
+        if value["symbol"] == ticker:
+            position_exits = True
+            position = value
+            break
+
+    if not position_exits:
+        # do you want to place sl ?
+        sl_check = 0
+        while sl_check not in [1, 2]:
+            sl_check = int(input("Do you want to place stoploss ?[1 > yes, 2 > no] >>> "))
+            if sl_check in [1, 2]:
+                if sl_check == 1:
+                    sl_price_ok = False
+                    sl_side = None
+                    while not sl_price_ok:
+                        if side == "b":
+                            sl_price = float(input("Choose stoploss price >>> "))
+                            try:
+                                if sl_price > 0 and sl_price < lower_price:
+                                    sl_price_ok = True
+                                    sl_side = "Sell"
+                                    client.place_order(category="linear", symbol=ticker, side=sl_side, orderType="Market", qty="0", triggerDirection=2, timeInForce="IOC", reduceOnly=True, closeOnTrigger=True, triggerBy="LastPrice", triggerPrice=str(sl_price))
+                            except:
+                                print("Wrong stoploss input, must be number and lower than lowest limit order")
+
+                        elif side == "s":
+                            sl_price = float(input("Choose stoploss price >>> "))
+                            try:
+                                if sl_price > upper_price:
+                                    sl_price_ok = True
+                                    sl_side = "Buy"
+                                    client.place_order(category="linear", symbol=ticker, side=sl_side, orderType="Market", qty="0", triggerDirection=1, timeInForce="IOC", reduceOnly=True, closeOnTrigger=True, triggerBy="LastPrice", triggerPrice=str(sl_price))
+                            except:
+                                print("Wrong stoploss input, must be number and higher than highest limit order")
+            else:
+                print("wrong input, try again")
+
+    limit_open_thread = Thread(target=limit_tranche_open, args=(client, usd_size, ticker, side, upper_price, lower_price, order_amount, bid_ask), name=f"FUTURES_{ticker}_{side}_limit_tranche_{usd_size}").start()
+
+
+def set_limits_at_bidask_close(client):
+    close_id, ticker, side, size, usd_value = select_close_id_futures(client)
+    max_order_size_coin, min_order_size_coin, decimals, tick_size, position_size_limit = get_instrument_info(client, ticker)
+    tick_decimals = str(tick_size)[::-1].find('.')
+
+    bps_range = 0.004
+    if ticker in ["BTCUSDT", "ETHUSDT"]:
+        bps_range = 0.001
+
+
+    bid_ask = True
+    close = False
+    while not close:
+        close_by = input("close by: usd size or % [1-usd, 2-%] >>> ")
+        if int(close_by) == 1:
+            usd_size = cli_inputs.select_usdt_size()
+            last_price = get_last_price(client, ticker)
+            coin_size = round(usd_size / last_price, decimals)
+            close = True
+        elif int(close_by) == 2:
+            pct = cli_inputs.select_pct()
+            coin_size = round(size * pct, decimals)
+            close = True
+        else:
+            print("Wrong input should be 1 or 2")
+
+    last_price = get_last_price(client, ticker)
+    if side == "b":
+        upper_price = last_price
+        lower_price = round(upper_price - (last_price * bps_range), tick_decimals)
+    elif side == "s":
+        lower_price = last_price
+        upper_price = round(lower_price + (last_price * bps_range), tick_decimals)
+
+    order_amount = 10
+
+    if close:
+        limit_close_thread = Thread(target=limit_tranche_close, args=(client, coin_size, ticker, side, upper_price, lower_price, order_amount, bid_ask), name=f"FUTURES_{ticker}_{side}_limit_tranche_{coin_size}").start()
 
 
 def set_multiple_twaps_open(client):
@@ -1011,49 +1126,3 @@ def bid_IO_wipe(client):
                     print("Wrong input, input must be 1 or 2")
     else:
         print("\nUpper % must be lower number than lower %")
-
-
-
-# todo: TESTING
-# api_key, api_secret = get_credentials(account="personal")
-# client = auth(api_key, api_secret)
-
-# set_limits_open(client)
-
-# bid_IO_wipe(client)
-
-# close_all_positions(client)
-
-# set_multiple_twaps_open(client)
-# set_multiple_twaps_close(client)
-
-# usdt = get_usdt_balance(client)
-# tickers = get_usdt_futures_tickers(client)
-
-# set_limits_close(client)
-# set_limits_at_avgPrc_close(client)
-
-# set_limits_open(client)
-# set_limits_at_avgPrc_open(client)
-
-# set_linear_twap_open(client)
-# set_linear_twap_close(client)
-
-# set_market_order_open(client)
-# set_market_order_close(client)
-
-
-# get_instrument_info(client, "BTCUSDT")
-# positions = get_open_positions(client, display=True)
-
-# market_order(client, "ETHUSDT", "s", 1000)
-# market_close(client, "ETHUSDT", "b", 0.6)
-
-# linear_twap_open(client, "ETHUSDT", "s", 1000, 30, 5)
-# linear_twap_close(client, "ETHUSDT", "b", 1000, 30, 5)
-
-# limit_tranche_open(client, 1000, "ETHUSDT", "b", 1770, 1740, 5)
-# limit_tranche_close(client, 0.55, "ETHUSDT", "b", 1780, 1740, 5)
-
-
-# limit_tranche_avg_price_reduce(client, 0.028, "BTCUSDT", "s", 35800, 35500, 35600, 5)
