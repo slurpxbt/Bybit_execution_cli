@@ -54,7 +54,11 @@ def get_usdt_futures_tickers(client):
 
             symbol = symbol.replace("USDT", "")
 
-            if "10000" in symbol:
+            if "1000000" in symbol:
+                symbol = symbol.replace("1000000", "")
+            elif "100000" in symbol:
+                symbol = symbol.replace("100000", "")
+            elif "10000" in symbol:
                 symbol = symbol.replace("10000", "")
             elif "1000" in symbol:
                 symbol = symbol.replace("1000", "")
@@ -1126,3 +1130,54 @@ def bid_IO_wipe(client):
                     print("Wrong input, input must be 1 or 2")
     else:
         print("\nUpper % must be lower number than lower %")
+
+
+
+# todo: TESTING
+# api_key, api_secret = get_credentials(account="personal")
+# client = auth(api_key, api_secret)
+
+
+# set_limits_at_bidask_open(client)
+# set_limits_at_bidask_close(client)
+
+
+# set_limits_open(client)
+
+# bid_IO_wipe(client)
+
+# close_all_positions(client)
+
+# set_multiple_twaps_open(client)
+# set_multiple_twaps_close(client)
+
+# usdt = get_usdt_balance(client)
+# tickers = get_usdt_futures_tickers(client)
+
+# set_limits_close(client)
+# set_limits_at_avgPrc_close(client)
+
+# set_limits_open(client)
+# set_limits_at_avgPrc_open(client)
+
+# set_linear_twap_open(client)
+# set_linear_twap_close(client)
+
+# set_market_order_open(client)
+# set_market_order_close(client)
+
+
+# get_instrument_info(client, "BTCUSDT")
+# positions = get_open_positions(client, display=True)
+
+# market_order(client, "ETHUSDT", "s", 1000)
+# market_close(client, "ETHUSDT", "b", 0.6)
+
+# linear_twap_open(client, "ETHUSDT", "s", 1000, 30, 5)
+# linear_twap_close(client, "ETHUSDT", "b", 1000, 30, 5)
+
+# limit_tranche_open(client, 1000, "ETHUSDT", "b", 1770, 1740, 5)
+# limit_tranche_close(client, 0.55, "ETHUSDT", "b", 1780, 1740, 5)
+
+
+# limit_tranche_avg_price_reduce(client, 0.028, "BTCUSDT", "s", 35800, 35500, 35600, 5)
