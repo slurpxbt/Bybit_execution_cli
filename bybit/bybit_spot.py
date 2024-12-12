@@ -76,6 +76,8 @@ def get_spot_usdt_tickers(client):
                 symbol = symbol.replace("10000", "")
             elif "1000" in symbol:
                 symbol = symbol.replace("1000", "")
+            elif "100000" in symbol:
+                symbol = symbol.replace("100000", "")
 
             tickers[symbol] = ticker
 
@@ -586,3 +588,38 @@ def set_market_order_pct(client):
 
     market_order_thread = Thread(target=market_order, args=(client, usd_size, coin_sell_amount ,ticker, side), name=f"SPOT_{ticker}_{side}_{usd_size}").start()
 
+# todo: TESTING
+# api_key, api_secret = get_credentials(account="IC_personal")
+# client = auth(api_key, api_secret)
+#
+
+# set_limit_orders_usd_bidask(client)
+# set_limit_orders_pct_bidask(client)
+# get_all_spot_positions(client)
+
+# set_limit_orders_usd(client)
+# set_limit_orders_pct(client)
+
+# set_limit_orders_atAvgPrc_usd(client)
+# set_limit_orders_atAvgPrc_pct(client)
+
+# set_linear_twap_usd(client)
+# set_market_order_usd(client)
+
+# set_linear_twap_pct(client)
+# set_market_order_pct(client)
+
+# todo: dodat price checke da štima glede uper limit itd da so zadeve logične uglavnem pa da nemorš ful velke cifre dat
+
+# limit_tranche(client, 500, "ETHUSDT", "s", 1850, 1810, 10)
+
+# limit_tranche_avg_price(client, 1000, "ETHUSDT", "s",1850, 1810, 1833 ,10)
+
+
+# linear_twap(client, 1965, "ETHUSDT", "s", 30, 10)
+# market_order(client, 1000, "ETHUSDT", "s")
+
+
+# tickers = get_spot_usdt_tickers(client)
+# max_order_size_coin, min_order_size_coin, min_order_amount, max_order_amount, decimals = get_instrument_info(client, "BTCUSDT")
+# balance = get_usdt_balance(client)

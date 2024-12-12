@@ -1,6 +1,7 @@
 import bybit_spot
 import bybit_usdt_futures
 import threading
+import order_overview
 
 
 def get_all_running_threads():
@@ -122,8 +123,8 @@ def bybit_spot_cli(account):
 
 
 def bybit_futures_cli(account):
-    api_key, api_secret = bybit_spot.get_credentials(account=account)
-    client = bybit_spot.auth(api_key, api_secret)
+    api_key, api_secret = bybit_usdt_futures.get_credentials(account=account)
+    client = bybit_usdt_futures.auth(api_key, api_secret)
 
     exit = False
     while not exit:
@@ -225,8 +226,9 @@ def main():
     while not exit:
         print("\n")
         print("Select account:"
-              "\n 1 >> Bybit SPOT"
-              "\n 2 >> Bybit USDT perps"
+              "\n 1 >> Bybit SPOT - IC_personal"
+              "\n 2 >> Bybit USDT perps - IC_personal"
+              "\n 3 >> Order Overview"
               "\n 999 >> check current running processes"
               "\n 0 >> exit terminal")
 
@@ -242,10 +244,14 @@ def main():
             print("\n")
         elif mode == 1:
             print("\n")
-            bybit_spot_cli(account="personal")
+            bybit_spot_cli(account="IC_personal")
         elif mode == 2:
             print("\n")
-            bybit_futures_cli(account="personal")
+            bybit_futures_cli(account="IC_personal")
+        elif mode == 3:
+            print("\n")
+            order_overview.Order_overview()
+
 
 if __name__ == "__main__":
     main()
